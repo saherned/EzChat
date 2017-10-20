@@ -47,4 +47,39 @@ angular.module('starter.services', [])
       return null;
     }
   };
+})
+.factory('Logging', function($filter, $cordovaFile){
+  /*-------------------------------File writing into external storage------------------------*/
+  self.saveInDebug = function(debugText){
+    var folder; var file;
+    today = new Date();
+    fileNameDate = $filter('date')(today, 'yyyyMMdd');
+    timestamp = $filter('date')(today, 'yyyy-MM-dd HH:mm:ss');
+
+    //Create Directory
+    $cordovaFile.createDir(cordova.file.externalRootDirectory,'EzChat Debug', true)
+      .then(function (success) {
+
+        //Create File in particular Directory
+        folder = cordova.file.externalRootDirectory + "EzChat Debug";
+        file = fileNameDate +".txt";
+
+        $cordovaFile.createFile(folder, file, true).then(function (success) {
+          $cordovaFile.writeExistingFile(folder, file, "\n" + timestamp + " - "+debugText)
+            .then(function (success) {
+              //alert("File Updated");
+            },function (error) {
+              alert("Failed to update file");
+            });
+
+        }, function (error) {
+          alert("Error in creating File")
+        });
+
+      }, function (error) {
+        alert("Error in creating Directory");
+      });
+
+  }
+  return self;
 });

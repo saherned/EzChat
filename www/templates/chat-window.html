@@ -1,0 +1,24 @@
+<ion-view view-title="{{data.contact_username}}">
+<ion-content>
+  <ion-scroll direction="y">
+    <div ng-repeat="message in data.messages" class="messages">
+      <div class="message" ng-class="{'other': message.user == true}">
+        <span ng-if="!message.user" class="positive"><strong>{{ message.name }}: </strong></span>
+        <span ng-class="{'msg2': message.user == true}" class="msg1">{{ message.text }}  <small>{{message.time}}</small></span>
+      </div>
+      <br>
+    </div>
+  </ion-scroll>
+  <div id="remote-videos-container"></div>
+
+  <div id="local-videos-container"></div>
+</ion-content>
+<ion-footer-bar keyboard-attach class="bar-stable item-input-inset">
+  <label class="item-input-wrapper">
+    <input type="text" id="msg" placeholder="Type your message" on-return="sendMessage(); closeKeyboard()" ng-model="data.message"/>
+  </label>
+  <button class="button button-positive" ng-click="sendMsg()">
+    Send
+  </button>
+</ion-footer-bar>
+</ion-view>

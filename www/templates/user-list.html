@@ -1,0 +1,28 @@
+<ion-view view-title="Users">
+  <ion-content>
+
+    <p class="text-center dark padding-top" ng-if="$root.userList.length==0">No user exist</p>
+
+    <ion-list>
+      <ion-item class="item-avatar item-icon-right" ng-repeat="user in $root.userList" type="item-text-wrap" ng-if="user.extra.joinedAt"> <!--href="#/chat-window/{{user.extra.fullName}}"-->
+        <img src="img/user.png">
+        <h2>{{user.extra.fullName}}</h2>
+        <p>{{user.extra.joinedAt | date : "MMM dd, yyyy hh:mm:ss"}}</p>
+        <a class = "icon positive ion-ios-videocam" ng-click="startVideoChat(user.extra.fullName)"></a>
+
+        <!--<i class="icon ion-chevron-right icon-accessory"></i>-->
+
+        <!--<ion-option-button class="button-positive ion-ios-videocam" ng-click="startVideoChat(user.extra.fullName)">
+        </ion-option-button>-->
+
+      </ion-item>
+    </ion-list>
+
+   <!-- <input placeholder="enter face" ng-model="data.face"/>
+    <button ng-click="change(data.face)">click</button>
+
+    <input placeholder="enter user" ng-model="data.u"/>
+    <button ng-click="startVideoChat(data.u)">click</button>-->
+
+  </ion-content>
+</ion-view>

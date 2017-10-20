@@ -1,10 +1,18 @@
-<ion-view view-title="Chats">
+<ion-view view-title="Users">
   <ion-content>
+
+   <!--<div class="card" ng-if="$root.userList.length==0">
+        <div class="item item-text-wrap">
+            No user exist
+        </div>
+    </div>-->
+    <p class="text-center dark padding-top" ng-if="$root.userList.length==0">No user exist</p>
+
     <ion-list>
-      <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="chat in chats" type="item-text-wrap" href="#/tab/chats/{{chat.id}}">
-        <img ng-src="{{chat.face}}">
-        <h2>{{chat.name}}</h2>
-        <p>{{chat.lastText}}</p>
+      <ion-item class="item-remove-animate item-avatar item-icon-right" ng-repeat="user in $root.userList" type="item-text-wrap" href="#/chat-window/{{user.extra.fullName}}">
+        <img src="img/user.png">
+        <h2>{{user.extra.fullName}}</h2>
+        <p>{{user.extra.joinedAt | date : "MMM dd, yyyy hh:mm:ss"}}</p>
         <i class="icon ion-chevron-right icon-accessory"></i>
 
         <ion-option-button class="button-assertive" ng-click="remove(chat)">
@@ -12,5 +20,7 @@
         </ion-option-button>
       </ion-item>
     </ion-list>
+
+   <!-- <p>{{$root.userList | json}}</p>-->
   </ion-content>
 </ion-view>

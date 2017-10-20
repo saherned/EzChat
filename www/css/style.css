@@ -1,1 +1,94 @@
 /* Empty. Add your own CSS if you like */
+/*video {
+  width: 400px;  !*40%*!
+  height: 300px;
+  border-radius:15px;
+  margin: 5px 10px;
+}*/
+
+#local-videos-container video{
+  width: 200px;
+  height: 100px;
+  border-radius:15px;
+  float: right;
+}
+
+#local-videos-container{
+  position: absolute;
+  top: 80%;
+  width: 200px;
+  height: 100px;
+  left: 50%;
+
+  /*padding: 200px 0px;
+  *//*z-index: 2147483647;*/
+}
+
+#pause-overlay{
+  position: absolute;
+  display: block;
+  width: 97%;
+  height: 4%;
+  top: 50%;
+  left: 0;
+  background-color: rgba(0,0,0,0.2);
+  z-index: 2;
+  cursor: pointer;
+}
+
+#remote-videos-container{
+  position: relative;
+}
+
+
+#remote-videos-container video{
+  width: 97%;
+  max-height: 100%;
+}
+
+
+/* msg css */
+.scroll {
+  padding: 0px 0 0px !important;
+}
+
+.messages {
+  align-content: center !important;
+  margin-bottom: 20px !important;
+}
+
+.other {
+  padding: 10px !important;
+  margin-left: 0 !important;
+  margin-right: auto !important;
+  float: right !important;
+  clear: both;
+}
+
+.message {
+  padding: 10px !important;
+  margin-left: auto !important;
+  margin-right: 0 !important;
+}
+
+.msg1 {
+  background: #007AFF !important;
+  display: block !important;
+  color: white !important;
+  padding: 10px !important;
+  border-radius: 10px !important;
+  text-align: left !important;
+  max-width: 240px !important;
+}
+
+.msg2 {
+  background: #d3d3d3 !important;
+  display: block !important;
+  color: black !important;
+  padding: 10px !important;
+  border-radius: 10px !important;
+  text-align: left !important;
+  max-width: 240px !important;
+}
+
+
