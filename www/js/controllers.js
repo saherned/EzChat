@@ -213,7 +213,11 @@ angular.module('starter.controllers', [])
       });*/
       if(!logout)
         alert('You have been disconnected from socket due to unstable internet connection. You need to reconnect.');
+      
+      if(window.cordova)
       ionic.Platform.exitApp();
+       else
+        document.location.href = 'index.html';
     });
 
    /* connection.onUserStatusChanged = function(event) {
