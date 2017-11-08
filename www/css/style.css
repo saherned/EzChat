@@ -15,7 +15,7 @@
 
 #local-videos-container{
   position: absolute;
-  top: 80%;
+  top:  80% !important; /*80% tha*/
   width: 200px;
   height: 100px;
   left: 50%;
@@ -40,12 +40,47 @@
   position: relative;
 }
 
-
 #remote-videos-container video{
   width: 97%;
   max-height: 100%;
 }
 
+/*.platform-browser #remote-videos-container{
+  position: relative;
+  height: 85vh !important;
+  width: 95vw !important;
+  top: 0 !important;
+}
+
+.platform-android #remote-videos-container{
+  position: relative;
+  height: 85vh !important;
+  width: 95vw !important;
+  top: -22vh !important;
+}
+
+.div-class{
+  position: relative;
+  left: 0;
+  bottom: 0 !important;
+  right: 5px;
+  height: 85vh !important;
+  width: 100vw !important;
+}
+
+#remote-videos-container video{
+  position: relative;
+  right: 0;
+  bottom: 0;
+  top: 0;
+  min-width: 100%;
+  min-height: 100%;
+  width: 100%;
+
+  height: 100% !important;
+  background-size: cover;
+  overflow: hidden;
+}*/
 
 /* msg css */
 .scroll {

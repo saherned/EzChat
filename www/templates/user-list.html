@@ -1,14 +1,26 @@
-<ion-view view-title="Users">
-  <ion-content>
+<ion-view view-title="{{$root.username}}, {{$root.joinedDate | date:'hh:mm:ss a'}}" hide-nav-bar="true">
+
+  <div class="bar bar-header bar-dark">
+    <!--<button class="button icon ion-navicon"></button>-->
+    <h1 class="title text-left">{{$root.username}}, {{$root.joinedDate | date:'hh:mm:ss a'}}</h1>
+    <button class="button" ng-click="logout()">Logout</button>
+  </div>
+
+  <div class="bar bar-subheader bar-stable">
+    <div class="h1 title">Contacts</div>
+  </div>
+
+  <ion-content class="has-subheader">
 
     <p class="text-center dark padding-top" ng-if="$root.userList.length==0">No user exist</p>
 
     <ion-list>
-      <ion-item class="item-avatar item-icon-right" ng-repeat="user in $root.userList" type="item-text-wrap" ng-if="user.extra.joinedAt"> <!--href="#/chat-window/{{user.extra.fullName}}"-->
+      <ion-item class="item-avatar item-icon-right" ng-repeat="user in $root.userList" type="item-text-wrap" ng-if="user.extra.fullName!=null"> <!--href="#/chat-window/{{user.extra.fullName}}"-->
         <img src="img/user.png">
+        <!--<h2>{{user.userid}}</h2>-->
         <h2>{{user.extra.fullName}}</h2>
         <p>{{user.extra.joinedAt | date : "MMM dd, yyyy hh:mm:ss"}}</p>
-        <a class = "icon positive ion-ios-videocam" ng-click="startVideoChat(user.extra.fullName)"></a>
+        <a class = "icon positive ion-ios-videocam" ng-click="startVideoChat(user.userid)"></a>
 
         <!--<i class="icon ion-chevron-right icon-accessory"></i>-->
 

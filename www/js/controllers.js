@@ -1,6 +1,6 @@
 angular.module('starter.controllers', [])
 
-.controller("LoginCtrl", function($scope, $state, $rootScope, $ionicHistory, Logging){
+.controller("LoginCtrl", function($scope, $state, $rootScope, $ionicHistory, Logging, ConnectivityMonitor, $ionicLoading){
 
     $scope.data={};
 
@@ -12,12 +12,13 @@ angular.module('starter.controllers', [])
     });
 
     connection = new RTCMultiConnection();
-    connection.socketURL = 'https://rtc-video.herokuapp.com:443/'; //http://192.168.1.3:9001/'; //https://rtc-video.herokuapp.com:443 //https://rtcmulticonnection.herokuapp.com:443/
+    connection.socketURL = 'https://rtc-video.herokuapp.com:443/'; //http://127.0.0.1:9001/'; //https://rtc-video.herokuapp.com:443 //https://rtcmulticonnection.herokuapp.com:443/
     connection.maxParticipantsAllowed = 1;
     connection.leaveOnPageUnload = true;
-    //connection.dontCaptureUserMedia = true;
+    connection.dontCaptureUserMedia = true;
 
     // all below lines are optional; however recommended.
+
      connection.session = {
         audio: true,
         video: true,
@@ -57,36 +58,95 @@ angular.module('starter.controllers', [])
       if(error.name=="TrackStartError"  || error.name=="DevicesNotFoundError")
       alert('Media Error: ' + error.name + '\nPlease ensure that camera and microphone is connected');
       else {
-        alert('Media Error: ' + error.name + '\nPlease enable permisions of media and restart app to proceed.');
+        alert('Media Error: ' + error.name + '\n' +
+      'Please enable permisions of media and restart app to proceed.');
       }
+    };
+
+    connection.onUserIdAlreadyTaken = function(useridAlreadyTaken, yourNewUserId) {
+     /* if (connection.enableLogs) {
+        console.warn('Userid already taken.', useridAlreadyTaken, 'Your new userid:', yourNewUserId);
+      }*/
+      console.log("user id already taken " + yourNewUserId);
+      //connection.join(useridAlreadyTaken);
+    };
+
+
+    connection.onerror = function(e) {
+      console.warn(e);
+      if (window.cordova)
+        Logging.saveInDebug(JSON.stringify(e).toString());
     };
 
     $scope.login = function (){
 
-      connection.extra = {
-        fullName: $scope.data.username,
-        joinedAt: new Date()
-      };
+      if(ConnectivityMonitor.isOnline()) {
 
-      /*connection.mediaConstraints.video.optional = [{
-        sourceId:  deviceID
-      }];*/
+        $ionicLoading.show({ template: '<ion-spinner icon="lines" class="spinner-positive"></ion-spinner><p>Connecting to Server...</p>' });
 
-      connection.checkPresence($scope.data.username, function(isRoomExists, roomid) {
-        if(isRoomExists) {
-          alert("This user is already exist. Please try some other");
-        }
-        else {
-          connection.open($scope.data.username, function() {
-            $rootScope.username = $scope.data.username;
-            addedTime = new Date();
-           if (window.cordova)
-              Logging.saveInDebug("Login with " + $scope.data.username);
-            $state.go("user-list");
+        var connection2 = new RTCMultiConnection();
+        connection2.socketURL = 'https://rtc-video.herokuapp.com:443/';
+        connection2.sessionid = $scope.data.username;
+
+        //console.log("login clicked32");
+
+        connection.extra = {
+          fullName: $scope.data.username,
+          joinedAt: new Date()
+        };
+
+        connection.sessionid = $scope.data.username;
+        /*connection.mediaConstraints.video.optional = [{
+         sourceId:  deviceID
+         }];*/
+        var timer;
+
+        try {
+          timer = setTimeout(function()
+          {
+            if($rootScope.username==undefined) {
+              $ionicLoading.hide();
+              $state.reload();
+              alert("Unable to connect to server, please check that you have stable internet connection.");
+            }
+          }, 20000);
+
+          connection2.checkPresence($scope.data.username, function (isRoomExists, roomid) {
+            connection2.socket.disconnect();
+            if (isRoomExists) {
+              clearTimeout(timer);
+              $ionicLoading.hide();
+              if (window.cordova)
+                Logging.saveInDebug("Login Failed - " + $scope.data.username + " already exist");
+              alert("This user is already exist. Please try some other");
+            }
+            else {
+              connection.open($scope.data.username, function () {
+                clearTimeout(timer);
+                $rootScope.username = $scope.data.username;
+                $rootScope.joinedDate = new Date();
+                addedTime = new Date();
+                if (window.cordova)
+                  Logging.saveInDebug("Login with " + $scope.data.username);
+                $ionicLoading.hide();
+                $state.go("user-list");
+              });
+            }
           });
         }
-      });
+      catch (e)
+      {
+        //alert(e);
+        alert("Unable to connect to server. Please restart application");
+        $ionicLoading.hide();
+        clearTimeout(timer);
+      }
+      }
+      else{
+        alert("Internet is not connected. Please check internet connection to proceed");
+      }
      }
+
 
       DetectRTC.load(function() {
            deviceID = [];
@@ -96,12 +156,12 @@ angular.module('starter.controllers', [])
            });
       });
 })
-.controller('UserListCtrl', function($scope, $filter, $ionicLoading, $rootScope, $stateParams, $state, $ionicPopup, $ionicHistory, Logging, $timeout) {
+.controller('UserListCtrl', function($scope, $filter, $ionicLoading, $rootScope, $stateParams, $state, $ionicPopup, $ionicHistory, Logging, $timeout, $cordovaNetwork, $cordovaToast, $ionicNavBarDelegate) {
 
     $scope.data = {
       onCall : false
     };
-
+    var logout = false;
     swipe = false;
 
     $scope.change = function(face){
@@ -122,22 +182,59 @@ angular.module('starter.controllers', [])
     var alreadyAllowed = {};
 
     checkUsers = function(){
-      $rootScope.userList = [];
-      connection.getAllUsers(function(owners) {
-        owners.forEach(function(owner) {
-          //var roomid = owner.userid; // + owner.extra
-          $rootScope.userList.push({extra:{fullName: owner.userid, joinedAt:owner.extra.joinedAt}});
-        });
-        $rootScope.$apply();
+      //if(navigator.onLine || $cordovaNetwork.isOnline()) {
+        $rootScope.userList = [];
+        connection.getAllUsers(function (owners) {
+          $rootScope.userList = owners;
+          //console.log(owners);
+          /*owners.forEach(function (owner) {
+            //var roomid = owner.userid; // + owner.extra
+            $rootScope.userList.push({extra: {fullName: owner.extra.fullName, joinedAt: owner.extra.joinedAt}});
+          });*/
+          $rootScope.$apply();
 
-        setTimeout(checkUsers, 5000); // recheck after every 5 seconds
-        console.log($rootScope.userList);
-      });
+          setTimeout(checkUsers, 5000); // recheck after every 5 seconds
+          console.log($rootScope.userList);
+        });
+      //}
     };
     checkUsers();
 
+    connection.socket.on('disconnect', function() {
+      //document.location.href = 'index.html';
+      /*$ionicViewService.nextViewOptions({
+        disableBack: true
+      });
+      $state.go("login");*/
+      /*$scope.$on('$ionicView.afterLeave', function(){
+        $ionicHistory.clearCache();
+        $ionicHistory.clearHistory();
+        $ionicNavBarDelegate.showBackButton(false);
+      });*/
+      if(!logout)
+        alert('You have been disconnected from socket due to unstable internet connection. You need to reconnect.');
+      ionic.Platform.exitApp();
+    });
+
+   /* connection.onUserStatusChanged = function(event) {
+      var isOnline = event.status === 'online';
+      var isOffline = event.status === 'offline';
+
+      /!*var targetUserId = event.userid;
+      var targetUserExtraInfo = event.extra;*!/
+
+      if(isOffline){
+        console.log(event.userid + " has become offline");
+      }
+    };*/
+
+    /*connection.rejoin = function(event){
+      alert('rejoin');
+    }*/
+
     connection.onNewParticipant = function(participantId, userPreferences) {
       callAttended = false;
+
       if(alreadyAllowed[participantId]) {
         connection.acceptParticipationRequest(participantId, userPreferences);
         return;
@@ -148,6 +245,9 @@ angular.module('starter.controllers', [])
 
       if (window.cordova){
         Logging.saveInDebug("Incoming call from " + participantId);
+        if(backMode == true) {
+          navigator.app.resumeApp();
+        }
       }
 
       $state.go("video-chat", {rec:participantId});
@@ -169,6 +269,7 @@ angular.module('starter.controllers', [])
             text: 'Reject',
             type: 'button-assertive button-outline',
             onTap: function(e) {
+              clearTimeout(timer);
               connection.setCustomSocketEvent('rejected-call');
               connection.socket.emit('rejected-call', {
                 callRejected: true,
@@ -178,8 +279,12 @@ angular.module('starter.controllers', [])
               if (window.cordova){
                 Logging.saveInDebug("Rejected call of " + participantId);
               }
+              connection.attachStreams.forEach(function(stream) {
+                stream.stop();
+              });
               audio.pause();
               audio.currentTime = 0;
+              localVideo=null;
               $ionicHistory.goBack();
             }
           },
@@ -187,6 +292,7 @@ angular.module('starter.controllers', [])
             text: 'Attend',
             type: 'button-positive button-outline',
             onTap: function(e) {
+              clearTimeout(timer);
               if (window.cordova)
                 Logging.saveInDebug("You received the call");
 
@@ -199,25 +305,36 @@ angular.module('starter.controllers', [])
         ]
       });
 
-     /* setTimeout(function(){
+      timer = setTimeout(function(){
         if(callAttended == false) {
           myPopup.close();
           audio.pause();
           audio.currentTime = 0;
+          connection.attachStreams.forEach(function(stream) {
+            stream.stop();
+          });
+          connection.setCustomSocketEvent('missed-call');
+          connection.socket.emit('missed-call', {
+            callMissed: true,
+            remoteUserId: connection.userid,
+            receiverId: participantId
+          });
+          alert(participantId + " call has been missed");
           if (window.cordova) {
             Logging.saveInDebug("Missed call from " + participantId);
           }
           $ionicHistory.goBack();
         }
-      },5000);
-    */
+      },30000);
+
     };
 
     connection.socket.on('cancelled-call', function(data) {
 
       if(data.receiverId != connection.userid) return;
+
         audio.pause();
-        //audio.currentTime = 0;
+        audio.currentTime = 0;
         alert(data.remoteUserId + " cancelled the call");
         if (myPopup != undefined) {
           myPopup.close();
@@ -232,6 +349,8 @@ angular.module('starter.controllers', [])
       if (window.cordova)
         Logging.saveInDebug(data.remoteUserId + " cancelled the call");
 
+      clearTimeout(timer);
+
         $ionicHistory.goBack();
 
     });
@@ -243,74 +362,108 @@ angular.module('starter.controllers', [])
       if (myPopup != undefined) {
         myPopup.close();
       }
+      connection.attachStreams.forEach(function(stream) {
+        stream.stop();
+      });
+      localVideo=null;
+      //clearTimeout(timer);
       if (window.cordova)
         Logging.saveInDebug(data.remoteUserId + " has declined your call");
 
       $ionicHistory.goBack();
     });
 
-    $scope.startVideoChat = function(user){
-      if(window.confirm('Aye you sure you want to start video chat with ' + user + "?")) {
-        $scope.data.contact_username = user;
+    connection.socket.on('missed-call', function(data) {
+      if(data.receiverId != connection.userid) return;
+      alert(data.remoteUserId + " didn't attend the call");
+      myPopup.close();
+      if (window.cordova)
+        Logging.saveInDebug(data.remoteUserId + " didn't attend the call");
+      $ionicHistory.goBack();
+      connection.attachStreams.forEach(function (stream) {
+        stream.stop();
+      });
+    });
 
-        connection.checkPresence($scope.data.contact_username, function(isRoomExists, roomid) {
-          if(isRoomExists) {
+  $scope.startVideoChat = function(user){
+      //if(navigator.onLine || $cordovaNetwork.isOnline()) {
+        if (window.confirm('Aye you sure you want to start video chat with ' + user + "?")) {
+          $scope.data.contact_username = user;
 
-            if (window.cordova) {
-              Logging.saveInDebug("Outgoing Call to " + user);
-            }
+          connection.checkPresence($scope.data.contact_username, function (isRoomExists, roomid) {
+            if (isRoomExists) {
 
-            $state.go("video-chat", {rec:user});
+              if (window.cordova) {
+                Logging.saveInDebug("Outgoing Call to " + user);
+              }
 
-            connection.join($scope.data.contact_username, function(){
-              callAttended = false;
-              myPopup = $ionicPopup.show({
-                template: '<p>Press cancel to cancel call</p>',
-                title: $scope.data.contact_username,
-                subTitle: 'Calling',
-                buttons: [
-                  {
-                    text: '<b>Cancel</b>',
-                    type: 'button-assertive button-outline',
-                    onTap: function(e) {
-                      connection.setCustomSocketEvent('cancelled-call');
-                      connection.socket.emit('cancelled-call', {
-                        callCancelled: true,
-                        remoteUserId: connection.userid,
-                        receiverId: $scope.data.contact_username
-                      });
-                      connection.attachStreams.forEach(function(stream) {
-                        stream.stop();
-                      });
-                      localVideo=null;
+              $state.go("video-chat", {rec: user});
 
-                      if (window.cordova)
-                        Logging.saveInDebug("You cancelled the call");
+              connection.join($scope.data.contact_username, function () {
+                callAttended = false;
+                myPopup = $ionicPopup.show({
+                  template: '<p>Press cancel to cancel call</p>',
+                  title: $scope.data.contact_username,
+                  subTitle: 'Calling',
+                  buttons: [
+                    {
+                      text: '<b>Cancel</b>',
+                      type: 'button-assertive button-outline',
+                      onTap: function (e) {
+                        connection.setCustomSocketEvent('cancelled-call');
+                        connection.socket.emit('cancelled-call', {
+                          callCancelled: true,
+                          remoteUserId: connection.userid,
+                          receiverId: $scope.data.contact_username
+                        });
+                        connection.attachStreams.forEach(function (stream) {
+                          stream.stop();
+                        });
+                       // clearTimeout(timer);
+                        localVideo = null;
 
-                      $ionicHistory.goBack();
+                        if (window.cordova)
+                          Logging.saveInDebug("You cancelled the call");
+
+                        $ionicHistory.goBack();
+                      }
                     }
+                  ]
+                });
+
+
+               /* timer = setTimeout(function () {
+                  if (connection.getAllParticipants().length==0) {
+                    myPopup.close();
+                    alert("Missed call generated");
+                    if (window.cordova)
+                      Logging.saveInDebug($scope.data.contact_username + " didn't attend the call");
+                    $ionicHistory.goBack();
+                    connection.attachStreams.forEach(function (stream) {
+                      stream.stop();
+                    });
+                    localVideo = null;
                   }
-                ]
+                }, 10000);*/
+
               });
+            }
+            else {
+              if (window.cordova)
+                Logging.saveInDebug("This username does not exist any more.");
+              alert("This username is not exist. Please enter valid username");
+            }
+          });
+        }
+      /*}
+      else
+        {
+          $ionicPopup.alert({
+            title: "Internet Connection",
+            content: "Internet is not connected. Please connect internet to start chat."
+          })
+        }*/
 
-              /*setTimeout(function(){
-                if(callAttended == false) {
-                  myPopup.close();
-                  if (window.cordova)
-                    Logging.saveInDebug($scope.data.contact_username + " didn't attend the call");
-                  $ionicHistory.goBack();
-                }
-              },5000);*/
-
-            });
-          }
-          else {
-            if (window.cordova)
-              Logging.saveInDebug("This username is used by another user");
-            alert("This username is not exist. Please enter valid username");
-          }
-        });
-      }
     }
 
     connection.onstream = function (event) {
@@ -338,7 +491,7 @@ angular.module('starter.controllers', [])
       $ionicHistory.goBack();
       if(myPopup!=undefined)
       myPopup.close();
-      alert("User is busy");
+      alert(roomid + " is busy");
       connection.disconnect();
       connection.attachStreams.forEach(function(stream) {
         stream.stop();
@@ -348,11 +501,34 @@ angular.module('starter.controllers', [])
         Logging.saveInDebug(roomid + " is busy");
     };
 
+    /*connection.onUserNotFound = function(roomid) {
+      alert("User not found");
+    };*/
+
     connection.onerror = function(e) {
       console.log(e);
       if (window.cordova)
         Logging.saveInDebug(JSON.stringify(e).toString());
     };
+
+    $scope.logout = function(){
+
+        var confirmPopup = $ionicPopup.confirm({
+          title: 'Logout',
+          template: 'Are you sure you want to logout?'
+        }).then(function(res) {
+          if(res) {
+            logout = true;
+            connection.socket.disconnect();
+            //document.location.href = 'index.html';
+            if(window.cordova)
+              $cordovaToast.showLongBottom("You have been logout successfully");
+            else
+              alert("You have been logout successfully");
+          }
+        });
+
+    }
 
 })
 
@@ -363,18 +539,19 @@ angular.module('starter.controllers', [])
       onCall : false
     };
 
+    connection.dontCaptureUserMedia = false;
     var localVideosContainer = document.getElementById("local-videos-container");
     var remoteVideosContainer = document.getElementById("remote-videos-container");
     var alreadyAllowed = {};
     $scope.data.receiver = $stateParams.rec;
 
-    if(localVideo!=null)
+    /*if(localVideo!=null)
     localVideosContainer.appendChild(localVideo);
-    else {
+    else {*/
       connection.captureUserMedia(function (stream) {
         console.log("before " + connection.attachStreams.length);
       })
-    }
+    //}
 
     $scope.change = function(face){
 
@@ -461,8 +638,14 @@ angular.module('starter.controllers', [])
             $scope.pause = false;
             if(window.cordova)
             $cordovaToast.showLongBottom(event.userid + ' : ' + event.data.msg);
+            else
+            alert(event.userid + ' : ' + event.data.msg);
             break;
           case "pause":
+            if(window.cordova)
+              $cordovaToast.showLongBottom(event.userid + ' : ' + event.data.msg);
+            else
+              alert(event.userid + ' : ' + event.data.msg);
             $scope.pause = true;
             break;
         }
@@ -477,10 +660,15 @@ angular.module('starter.controllers', [])
       console.log('Data connection closed between you and ' + event.userid);
       $scope.data.log = 'End call with: ' + event.userid
         + ", " + ($filter('date')(new Date(), "dd-MM-yyyy hh:mm:ss")).toString();
+
+      if(window.cordova) {
+        $cordovaToast.showLongBottom('End call with: ' + event.userid
+          + ", " + ($filter('date')(new Date(), "dd-MM-yyyy hh:mm:ss")).toString());
+        Logging.saveInDebug('End call with: ' + event.userid);
+      }
+      else
       alert('End call with: ' + event.userid
         + ", " + ($filter('date')(new Date(), "dd-MM-yyyy hh:mm:ss")).toString());
-      if (window.cordova)
-        Logging.saveInDebug('End call with: ' + event.userid);
 
       $scope.data.onCall = false;
       $scope.$apply();

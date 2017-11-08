@@ -7,10 +7,12 @@
 // 'starter.controllers' is found in controllers.js
 angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', 'ngCordova'])
 
-.run(function($ionicPlatform, $ionicPopup, Logging) {
+.run(function($ionicPlatform, $ionicPopup, Logging, $cordovaToast) {
   $ionicPlatform.ready(function() {
     // Hide the accessory bar by default (remove this to show the accessory bar above the keyboard
     // for form inputs)
+
+    backMode = false;
 
     if(window.Connection) {
       if (navigator.connection.type == Connection.NONE) {
@@ -25,13 +27,21 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
     }
 
     $ionicPlatform.on("resume", function (event) {
-      connection.send({type:"resume", msg:" resumed the app"});
-      Logging.saveInDebug("You resumed the app.");
+      backMode = false;
+      if(connection.getAllParticipants().length>0) {
+        connection.send({type: "resume", msg: " resumed the app"});
+        $cordovaToast.showLongBottom("Video Chat has been resumed");
+      }
+      Logging.saveInDebug("App has been resumed.");
     });
 
     $ionicPlatform.on("pause", function (event) {
-      connection.send({type:"pause", msg: " paused the app"});
-      Logging.saveInDebug("You paused the app.");
+      backMode = true;
+      if(connection.getAllParticipants().length>0) {
+        connection.send({type: "pause", msg: " paused the app"});
+        $cordovaToast.showLongBottom("Video Chat has been paused");
+      }
+      Logging.saveInDebug("App has been paused.");
     });
 
     if (window.cordova && window.cordova.plugins && window.cordova.plugins.Keyboard) {
@@ -55,6 +65,7 @@ angular.module('starter', ['ionic', 'starter.controllers', 'starter.services', '
   $stateProvider
 
     .state('login', {
+      cache: false,
       url: '/login',
       templateUrl: 'templates/login.html',
       controller : 'LoginCtrl'

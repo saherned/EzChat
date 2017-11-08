@@ -6,12 +6,12 @@
     <button class="button button-clear button-positive" ng-click="leave()">End Call</button>
   </div>
 
-  <ion-content class="padding has-subheader">
+  <ion-content class="padding has-subheader" scroll="false">
 
     <p class="dark">{{data.log}}</p>
     <p class="dark">{{$root.users}}</p>
 
-    <div style="position: relative; left: 0; top: 0;">
+    <div class="div-class">
       <div id="pause-overlay" ng-if="pause">
         <p style="text-align: center">Respondent has paused the video</p>
       </div>
